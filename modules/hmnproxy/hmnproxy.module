@@ -1,0 +1,139 @@
+<?php
+
+function hmnproxy_menu() {
+  $items['hmnproxy/view'] = array(
+    'title' => 'View Services',
+    'description' => 'View Services available on this server.',
+    'page callback' => 'hmnproxy_view_services',
+    'access callback' => TRUE,
+  );
+  $items['hmnproxy/getbdusers'] = array(
+    'title' => 'Get Brilliant Directories Users',
+    'description' => 'Get the Brilliant Directories users associated with this site.',
+    'page callback' => 'hmnproxy_get_bd_users_page',
+    'access callback' => TRUE,
+  );
+  return $items;
+}
+
+function hmnproxy_get_bd_users_page() {
+  $server = url($GLOBALS['base_url'] . '/xmlrpc.php', array('external' => TRUE));
+  $options = array(
+    'hmnproxy.getbdusers' => array((int) 0),
+  );
+  $users = xmlrpc($server, $options, array('timeout' => 300));
+  if ($users === FALSE ) {
+    drupal_set_message(t('Failed to call service:  @errno (@msg)', array('@errno' => xmlrpc_errno(), '@msg' => xmlrpc_error_msg())));
+  }
+  return t('Received:  <pre>' . print_r($users, TRUE) . '</pre><br />');
+}
+
+function hmnproxy_view_services() {
+  $server = url($GLOBALS['base_url'] . '/xmlrpc.php', array('external' => TRUE));
+
+  $options = array(
+    'system.listMethods' => array(),
+  );
+  // Make the xmlrpc request and process the results.
+  $supported_methods = xmlrpc($server, $options);
+  if ($supported_methods === FALSE) {
+    drupal_set_message(t('Error return from xmlrpc(): Error: @errno, Message: @message', array('@errno' => xmlrpc_errno(), '@message' => xmlrpc_error_msg())));
+  }
+
+  return array(
+   'method_array' => array(
+      '#markup' => theme(
+        'item_list',
+        array(
+          'title' => t('These methods are supported by !server',
+          array('!server' => $server)
+          ),
+          'items' => $supported_methods,
+        )
+      ),
+    ),
+  );
+}
+
+function hmnproxy_xmlrpc() {
+  $methods[] = array(
+    'hmnproxy.getbdusers',
+    'hmnproxy_get_bd_users',
+    array('struct', 'int'),
+    t('Returns the user list from Brilliant Directories'),
+  );
+
+  $methods[] = array(
+    'hmnproxy.getbduserstatus',
+    'hmnproxy_get_bd_user_status',
+    array('struct'),
+    t('Returns the user update status from Brilliant Directories'),
+  );
+  return $methods;
+}
+
+function hmnproxy_get_bd_user_status() {
+  try {
+    //$user = "ehar2981_OSC";//change this for your user access into brilliant directories
+    //$pass = "T3clad0.";//change this for your password access into brilliant directories 
+    $user = "ehar2981_syncOCS";
+    $pass = "syncOCSD";
+    $dbh = new PDO('mysql:host=dirapp5.directorysecure.com;dbname=ehar2981_directory', $user, $pass);
+
+    $user_statuses = array();
+    $sql = "SELECT * from `update_users`";
+    foreach($dbh->query("SELECT * from `update_users`") as $data2) {
+      $user_statuses[$data2['user_id']] = array(
+        'status' => $data2['active'],
+        'email' => $data2['email'],
+      );
+    }
+    return($user_statuses);
+  }
+  catch (PDOException $e) {
+    watchdog('hmnproxy', t('IP:  @ip<br/>Exception:  @m<br/>'), array('@ip' => $_SERVER['REMOTE_ADDR'], '@m' => $e->getMessage()));
+    return array(
+      'exception' => array(t('@m', array('@m' => $e->getMessage()))),
+      'execution_time' => (string)(microtime(true) - $begin_time),
+    );
+  }
+}
+
+function hmnproxy_get_bd_users($max) { 
+  $begin_time = microtime(true);
+  watchdog('hmnproxy', t('max = @m', array('@m' => $max)));
+  try {
+    //$user = "ehar2981_OSC";//change this for your user access into brilliant directories
+    //$pass = "T3clad0.";//change this for your password access into brilliant directories 
+    $user = "ehar2981_syncOCS";
+    $pass = "syncOCSD";
+    $dbh = new PDO('mysql:host=dirapp5.directorysecure.com;dbname=ehar2981_directory', $user, $pass);
+
+    $new_users = array();
+    $sql = "SELECT * from `users_data` WHERE `user_id` > '$max' 
+              AND `user_id` != 101 AND `user_id` != 475 AND `user_id` != 216
+              AND `user_id` != 385 AND `user_id` != 386 AND `user_id` != 387
+              AND `user_id` != 418 AND `user_id` != 435";
+    foreach($dbh->query($sql) as $data) {
+      //$new_users[] = $data['email'];
+      $new_users[] = array(
+        'email' => $data['email'],
+        'profession_id' => $data['subscription_id'],
+        'name' => $data['first_name'],
+        'passUser' => $data['password'],
+        'email' => $data['email'],
+        'user_id2' => $data['user_id'],
+      );
+      break;
+      //$new_users[] = $data;
+    }
+
+    return $new_users;
+  }catch (PDOException $e) {
+    watchdog('hmnproxy', t('IP:  @ip<br/>Exception:  @m<br/>'), array('@ip' => $_SERVER['REMOTE_ADDR'], '@m' => $e->getMessage()));
+    return array(
+      'exception' => array(t('@m', array('@m' => $e->getMessage()))),
+      'execution_time' => (string)(microtime(true) - $begin_time),
+    );
+  } 
+}

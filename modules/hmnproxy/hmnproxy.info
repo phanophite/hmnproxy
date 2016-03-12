@@ -1,0 +1,5 @@
+name = HMNProxy
+description = Customizes a Drupal web site for Home Maven Network
+core = 7.x
+
+dependencies[] = services
