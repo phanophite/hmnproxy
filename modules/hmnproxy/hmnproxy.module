@@ -23,7 +23,7 @@ function hmnproxy_get_bd_users_page() {
   );
   $users = xmlrpc($server, $options, array('timeout' => 300));
   if ($users === FALSE ) {
-    drupal_set_message(t('Failed to call service:  @errno (@msg)', array('@errno' => xmlrpc_errno(), '@msg' => xmlrpc_error_msg())));
+    drupal_set_message(t('Failed to call service:  @errno (@msg)', array('@errno' => xmlrpc_errno(), '@msg' => xmlrpc_error_msg())),'error');
   }
   return t('Received:  <pre>' . print_r($users, TRUE) . '</pre><br />');
 }
@@ -59,7 +59,7 @@ function hmnproxy_xmlrpc() {
   $methods[] = array(
     'hmnproxy.getbdusers',
     'hmnproxy_get_bd_users',
-    array('struct', 'int'),
+    array('struct', 'int','int'),
     t('Returns the user list from Brilliant Directories'),
   );
 
@@ -99,7 +99,7 @@ function hmnproxy_get_bd_user_status() {
   }
 }
 
-function hmnproxy_get_bd_users($max) { 
+function hmnproxy_get_bd_users($max, $max_users) { 
   $begin_time = microtime(true);
   watchdog('hmnproxy', t('max = @m', array('@m' => $max)));
   try {
@@ -114,6 +114,7 @@ function hmnproxy_get_bd_users($max) {
               AND `user_id` != 101 AND `user_id` != 475 AND `user_id` != 216
               AND `user_id` != 385 AND `user_id` != 386 AND `user_id` != 387
               AND `user_id` != 418 AND `user_id` != 435";
+    $user_count = 0;
     foreach($dbh->query($sql) as $data) {
       //$new_users[] = $data['email'];
       $new_users[] = array(
@@ -124,8 +125,10 @@ function hmnproxy_get_bd_users($max) {
         'email' => $data['email'],
         'user_id2' => $data['user_id'],
       );
-      break;
-      //$new_users[] = $data;
+      $user_count++;
+      if ($user_count >= $max_users) {
+        break;
+      }
     }
 
     return $new_users;
