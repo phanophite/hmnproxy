@@ -77,7 +77,7 @@ function hmnproxy_get_bd_user_status() {
     //$user = "ehar2981_OSC";//change this for your user access into brilliant directories
     //$pass = "T3clad0.";//change this for your password access into brilliant directories 
     $user = "ehar2981_syncOCS";
-    $pass = "syncOCSD";
+    $pass = "syncHomeMaven";
     $dbh = new PDO('mysql:host=dirapp5.directorysecure.com;dbname=ehar2981_directory', $user, $pass);
 
     $user_statuses = array();
@@ -106,7 +106,7 @@ function hmnproxy_get_bd_users($max, $max_users) {
     //$user = "ehar2981_OSC";//change this for your user access into brilliant directories
     //$pass = "T3clad0.";//change this for your password access into brilliant directories 
     $user = "ehar2981_syncOCS";
-    $pass = "syncOCSD";
+    $pass = "syncHomeMaven";
     $dbh = new PDO('mysql:host=dirapp5.directorysecure.com;dbname=ehar2981_directory', $user, $pass);
 
     $new_users = array();
